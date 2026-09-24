@@ -1,8 +1,12 @@
+#include "helpers/memory/Memory.hpp"
+#include <hyprutils/memory/UniquePtr.hpp>
 #include <keybinds/Bind.hpp>
 
 #include <gtest/gtest.h>
 
 #include <array>
+
+#include <keybinds/Manager.hpp>
 
 using namespace Keybinds;
 using namespace Input;
@@ -26,11 +30,13 @@ TEST(Keybinds, SidedModifierMatchesCorrectSide) {
     const auto       LEFT_SHIFT  = resolvedKey("SHIFT_L", 50, HL_MODIFIER_SHIFT);
     const auto       RIGHT_SHIFT = resolvedKey("SHIFT_R", 62, HL_MODIFIER_SHIFT);
     const auto       K           = resolvedKey("K", 45);
+    CSubmapContext   emptySubmapContext;
 
     const std::array leftHeld = {LEFT_SHIFT, K};
     EXPECT_EQ(result->matches({
                   .heldKeys     = leftHeld,
                   .trigger      = K,
+                  .submap       = emptySubmapContext,
                   .modifiersNow = HL_MODIFIER_SHIFT,
               }),
               BIND_MATCH_FULL);
@@ -39,6 +45,7 @@ TEST(Keybinds, SidedModifierMatchesCorrectSide) {
     EXPECT_EQ(result->matches({
                   .heldKeys     = rightHeld,
                   .trigger      = K,
+                  .submap       = emptySubmapContext,
                   .modifiersNow = HL_MODIFIER_SHIFT,
               }),
               BIND_MATCH_NONE);
@@ -47,6 +54,7 @@ TEST(Keybinds, SidedModifierMatchesCorrectSide) {
     EXPECT_EQ(result->matches({
                   .heldKeys     = bothHeld,
                   .trigger      = K,
+                  .submap       = emptySubmapContext,
                   .modifiersNow = HL_MODIFIER_SHIFT,
               }),
               BIND_MATCH_NONE);
@@ -58,10 +66,12 @@ TEST(Keybinds, SidedModifierCanPartiallyMatch) {
 
     const auto       LEFT_SHIFT = resolvedKey("SHIFT_L", 50, HL_MODIFIER_SHIFT);
     const std::array held       = {LEFT_SHIFT};
+    CSubmapContext   emptySubmapContext;
 
     EXPECT_EQ(result->matches({
                   .heldKeys     = held,
                   .trigger      = LEFT_SHIFT,
+                  .submap       = emptySubmapContext,
                   .modifiersNow = Input::HL_MODIFIER_NONE,
               }),
               BIND_MATCH_PARTIAL);
@@ -74,10 +84,12 @@ TEST(Keybinds, UnsidedModifierMatchesEitherSide) {
     const auto       RIGHT_SHIFT = resolvedKey("SHIFT_R", 62, HL_MODIFIER_SHIFT);
     const auto       K           = resolvedKey("K", 45);
     const std::array held        = {RIGHT_SHIFT, K};
+    CSubmapContext   emptySubmapContext;
 
     EXPECT_EQ(result->matches({
                   .heldKeys     = held,
                   .trigger      = K,
+                  .submap       = emptySubmapContext,
                   .modifiersNow = HL_MODIFIER_SHIFT,
               }),
               BIND_MATCH_FULL);
@@ -89,7 +101,9 @@ TEST(Keybinds, UnsidedModifierAloneDoesNotPartiallyMatch) {
 
     const auto       SUPER = resolvedKey("SUPER_L", 133, HL_MODIFIER_META);
     const std::array held  = {SUPER};
-    EXPECT_EQ(result->matches({.heldKeys = held, .trigger = SUPER, .modifiersNow = HL_MODIFIER_META}), BIND_MATCH_NONE);
+    CSubmapContext   emptySubmapContext;
+
+    EXPECT_EQ(result->matches({.heldKeys = held, .trigger = SUPER, .submap = emptySubmapContext, .modifiersNow = HL_MODIFIER_META}), BIND_MATCH_NONE);
 }
 
 TEST(Keybinds, SingleKeyAllowsOtherHeldKeys) {
@@ -99,10 +113,12 @@ TEST(Keybinds, SingleKeyAllowsOtherHeldKeys) {
     const auto       A    = resolvedKey("A", 38);
     const auto       K    = resolvedKey("K", 45);
     const std::array held = {A, K};
+    CSubmapContext   emptySubmapContext;
 
     EXPECT_EQ(result->matches({
                   .heldKeys = held,
                   .trigger  = K,
+                  .submap   = emptySubmapContext,
               }),
               BIND_MATCH_FULL);
 }
@@ -115,10 +131,12 @@ TEST(Keybinds, MultiKeyMatchingIsExactAndOrdered) {
     const auto       K       = resolvedKey("K", 45);
     const auto       X       = resolvedKey("X", 53);
     const std::array partial = {A};
+    CSubmapContext   emptySubmapContext;
 
     EXPECT_EQ(result->matches({
                   .heldKeys = partial,
                   .trigger  = A,
+                  .submap   = emptySubmapContext,
               }),
               BIND_MATCH_PARTIAL);
 
@@ -126,11 +144,13 @@ TEST(Keybinds, MultiKeyMatchingIsExactAndOrdered) {
     EXPECT_EQ(result->matches({
                   .heldKeys = full,
                   .trigger  = K,
+                  .submap   = emptySubmapContext,
               }),
               BIND_MATCH_FULL);
     EXPECT_EQ(result->matches({
                   .heldKeys = full,
                   .trigger  = A,
+                  .submap   = emptySubmapContext,
               }),
               BIND_MATCH_NONE);
 
@@ -138,6 +158,7 @@ TEST(Keybinds, MultiKeyMatchingIsExactAndOrdered) {
     EXPECT_EQ(result->matches({
                   .heldKeys = extra,
                   .trigger  = K,
+                  .submap   = emptySubmapContext,
               }),
               BIND_MATCH_PARTIAL);
 }
@@ -148,10 +169,12 @@ TEST(Keybinds, OneHeldKeyCannotSatisfyTwoPatterns) {
 
     const auto       A    = resolvedKey("A", 38);
     const std::array held = {A};
+    CSubmapContext   emptySubmapContext;
 
     EXPECT_EQ(result->matches({
                   .heldKeys = held,
                   .trigger  = A,
+                  .submap   = emptySubmapContext,
               }),
               BIND_MATCH_PARTIAL);
 }
@@ -162,16 +185,19 @@ TEST(Keybinds, ReleaseBindCompletesOnRelease) {
 
     const auto       K    = resolvedKey("K", 45);
     const std::array held = {K};
+    CSubmapContext   emptySubmapContext;
 
     EXPECT_EQ(result->matches({
                   .heldKeys = held,
                   .trigger  = K,
+                  .submap   = emptySubmapContext,
                   .pressed  = true,
               }),
               BIND_MATCH_PARTIAL);
     EXPECT_EQ(result->matches({
                   .heldKeys = held,
                   .trigger  = K,
+                  .submap   = emptySubmapContext,
                   .pressed  = false,
               }),
               BIND_MATCH_FULL);
@@ -183,10 +209,12 @@ TEST(Keybinds, ReleaseBindUsesModifiersAtPress) {
 
     const auto       K    = resolvedKey("K", 45);
     const std::array held = {K};
+    CSubmapContext   emptySubmapContext;
 
     EXPECT_EQ(result->matches({
                   .heldKeys         = held,
                   .trigger          = K,
+                  .submap           = emptySubmapContext,
                   .modifiersNow     = HL_MODIFIER_NONE,
                   .modifiersAtPress = HL_MODIFIER_META,
                   .pressed          = false,
@@ -201,10 +229,12 @@ TEST(Keybinds, ReleaseBindIgnoresModifiersPressedAfterTrigger) {
     const auto       SUPER = resolvedKey("SUPER_L", 133, HL_MODIFIER_META);
     const auto       K     = resolvedKey("K", 45);
     const std::array held  = {K, SUPER};
+    CSubmapContext   emptySubmapContext;
 
     EXPECT_EQ(result->matches({
                   .heldKeys         = held,
                   .trigger          = K,
+                  .submap           = emptySubmapContext,
                   .modifiersNow     = HL_MODIFIER_META,
                   .modifiersAtPress = HL_MODIFIER_NONE,
                   .pressed          = false,
@@ -218,10 +248,12 @@ TEST(Keybinds, ModifierReleaseBindIncludesTriggerModifier) {
 
     const auto       SUPER = resolvedKey("SUPER_L", 133, HL_MODIFIER_META);
     const std::array held  = {SUPER};
+    CSubmapContext   emptySubmapContext;
 
     EXPECT_EQ(result->matches({
                   .heldKeys         = held,
                   .trigger          = SUPER,
+                  .submap           = emptySubmapContext,
                   .modifiersNow     = HL_MODIFIER_NONE,
                   .modifiersAtPress = HL_MODIFIER_NONE,
                   .pressed          = false,
@@ -233,7 +265,20 @@ TEST(Keybinds, CatchAllContextHonorsSubmapAndModifiers) {
     auto result = CBind::make({"SUPER", "catchall"}, BIND_FLAG_CATCH_ALL, [] { return SBindResult{}; }, {.metadata = {.submap = "resize"}});
     ASSERT_TRUE(result.has_value());
 
-    EXPECT_TRUE(result->matchesContext({.modifiersNow = HL_MODIFIER_META, .submap = "resize"}));
-    EXPECT_FALSE(result->matchesContext({.modifiersNow = HL_MODIFIER_META, .submap = "other"}));
-    EXPECT_FALSE(result->matchesContext({.submap = "resize"}));
+    auto           resize = makeUnique<CSubmap>("resize");
+    auto           other  = makeUnique<CSubmap>("other");
+    CSubmapContext submapContext;
+
+    submapContext.add(resize);
+    ASSERT_TRUE(submapContext.contains("resize"));
+
+    EXPECT_TRUE(result->matchesContext({.submap = submapContext, .modifiersNow = HL_MODIFIER_META}));
+    EXPECT_FALSE(result->matchesContext({.submap = submapContext}));
+
+    submapContext.remove(resize);
+    submapContext.add(other);
+    ASSERT_FALSE(submapContext.contains("resize"));
+    ASSERT_TRUE(submapContext.contains("other"));
+
+    EXPECT_FALSE(result->matchesContext({.submap = submapContext, .modifiersNow = HL_MODIFIER_META}));
 }

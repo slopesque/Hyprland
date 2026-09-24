@@ -1,3 +1,4 @@
+#include "keybinds/Manager.hpp"
 #include <keybinds/MatchResolver.hpp>
 
 #include <gtest/gtest.h>
@@ -21,6 +22,7 @@ static SResolvedKey resolverKey(const char* name, xkb_keycode_t code) {
 }
 
 TEST(KeybindsMatchResolver, LongerFullChordSuppressesShorterFullChord) {
+    CSubmapContext          emptySubmapContext;
     const auto              SHORT = makeResolverBind({"SUPER", "K"});
     const auto              LONG  = makeResolverBind({"SUPER", "Q", "K"});
     const auto              Q     = resolverKey("Q", 24);
@@ -29,6 +31,7 @@ TEST(KeybindsMatchResolver, LongerFullChordSuppressesShorterFullChord) {
     const SBindEventContext CONTEXT{
         .heldKeys     = HELD,
         .trigger      = K,
+        .submap       = emptySubmapContext,
         .modifiersNow = HL_MODIFIER_META,
     };
     const std::array CANDIDATES = {
@@ -43,6 +46,7 @@ TEST(KeybindsMatchResolver, LongerFullChordSuppressesShorterFullChord) {
 }
 
 TEST(KeybindsMatchResolver, FullPrefixWaitsForLongerChord) {
+    CSubmapContext          emptySubmapContext;
     const auto              SHORT = makeResolverBind({"SUPER", "Q"});
     const auto              LONG  = makeResolverBind({"SUPER", "Q", "K"});
     const auto              Q     = resolverKey("Q", 24);
@@ -50,6 +54,7 @@ TEST(KeybindsMatchResolver, FullPrefixWaitsForLongerChord) {
     const SBindEventContext CONTEXT{
         .heldKeys     = HELD,
         .trigger      = Q,
+        .submap       = emptySubmapContext,
         .modifiersNow = HL_MODIFIER_META,
     };
     const std::array CANDIDATES = {
@@ -64,6 +69,7 @@ TEST(KeybindsMatchResolver, FullPrefixWaitsForLongerChord) {
 }
 
 TEST(KeybindsMatchResolver, ReverseOrderDoesNotDeferShortChord) {
+    CSubmapContext          emptySubmapContext;
     const auto              SHORT = makeResolverBind({"SUPER", "Q"});
     const auto              LONG  = makeResolverBind({"SUPER", "K", "Q"});
     const auto              Q     = resolverKey("Q", 24);
@@ -71,6 +77,7 @@ TEST(KeybindsMatchResolver, ReverseOrderDoesNotDeferShortChord) {
     const SBindEventContext CONTEXT{
         .heldKeys     = HELD,
         .trigger      = Q,
+        .submap       = emptySubmapContext,
         .modifiersNow = HL_MODIFIER_META,
     };
     const std::array CANDIDATES = {
@@ -85,6 +92,7 @@ TEST(KeybindsMatchResolver, ReverseOrderDoesNotDeferShortChord) {
 }
 
 TEST(KeybindsMatchResolver, SidedModifierDoesNotIncreaseChordLength) {
+    CSubmapContext     emptySubmapContext;
     const auto         SHORT = makeResolverBind({"SHIFT_L", "Q"});
     const auto         LONG  = makeResolverBind({"SHIFT", "Q", "K"});
     const SResolvedKey SHIFT{
@@ -97,6 +105,7 @@ TEST(KeybindsMatchResolver, SidedModifierDoesNotIncreaseChordLength) {
     const SBindEventContext CONTEXT{
         .heldKeys     = HELD,
         .trigger      = Q,
+        .submap       = emptySubmapContext,
         .modifiersNow = HL_MODIFIER_SHIFT,
     };
     const std::array CANDIDATES = {
@@ -113,6 +122,7 @@ TEST(KeybindsMatchResolver, SidedModifierDoesNotIncreaseChordLength) {
 }
 
 TEST(KeybindsMatchResolver, SidedModifierSubChordIsSuppressed) {
+    CSubmapContext     emptySubmapContext;
     const auto         SHORT = makeResolverBind({"SHIFT_L", "K"});
     const auto         LONG  = makeResolverBind({"SHIFT", "Q", "K"});
     const SResolvedKey SHIFT{
@@ -126,6 +136,7 @@ TEST(KeybindsMatchResolver, SidedModifierSubChordIsSuppressed) {
     const SBindEventContext CONTEXT{
         .heldKeys     = HELD,
         .trigger      = K,
+        .submap       = emptySubmapContext,
         .modifiersNow = HL_MODIFIER_SHIFT,
     };
 
@@ -133,6 +144,7 @@ TEST(KeybindsMatchResolver, SidedModifierSubChordIsSuppressed) {
 }
 
 TEST(KeybindsMatchResolver, LongPressPrefixIsDeferred) {
+    CSubmapContext          emptySubmapContext;
     const auto              SHORT = makeResolverBind({"SUPER", "Q"}, BIND_FLAG_LONG_PRESS);
     const auto              LONG  = makeResolverBind({"SUPER", "Q", "K"});
     const auto              Q     = resolverKey("Q", 24);
@@ -140,6 +152,7 @@ TEST(KeybindsMatchResolver, LongPressPrefixIsDeferred) {
     const SBindEventContext CONTEXT{
         .heldKeys     = HELD,
         .trigger      = Q,
+        .submap       = emptySubmapContext,
         .modifiersNow = HL_MODIFIER_META,
     };
     const std::array CANDIDATES = {
@@ -154,6 +167,7 @@ TEST(KeybindsMatchResolver, LongPressPrefixIsDeferred) {
 }
 
 TEST(KeybindsMatchResolver, ReleaseChordArmsOnlyWhenFullyHeld) {
+    CSubmapContext          emptySubmapContext;
     const auto              BIND        = makeResolverBind({"SUPER", "Q", "K"}, BIND_FLAG_RELEASE);
     const auto              Q           = resolverKey("Q", 24);
     const auto              K           = resolverKey("K", 45);
@@ -161,12 +175,14 @@ TEST(KeybindsMatchResolver, ReleaseChordArmsOnlyWhenFullyHeld) {
     const SBindEventContext INCOMPLETE{
         .heldKeys     = K_ONLY_HELD,
         .trigger      = K,
+        .submap       = emptySubmapContext,
         .modifiersNow = HL_MODIFIER_META,
     };
     const std::array        FULLY_HELD = {Q, K};
     const SBindEventContext COMPLETE{
         .heldKeys     = FULLY_HELD,
         .trigger      = K,
+        .submap       = emptySubmapContext,
         .modifiersNow = HL_MODIFIER_META,
     };
 

@@ -200,7 +200,8 @@ bool CBind::matchesContext(const SBindEventContext& ctx) const {
     if (!m_enabled || !matchesDevice(ctx.device))
         return false;
 
-    if (!(m_flags & BIND_FLAG_SUBMAP_UNIVERSAL) && m_metadata.submap != ctx.submap)
+    // TODO: fix the case of submap == ""
+    if (!(m_flags & BIND_FLAG_SUBMAP_UNIVERSAL) && !ctx.submap.find(m_metadata.submap))
         return false;
 
     auto effectiveMods = ctx.pressed ? ctx.modifiersNow : ctx.modifiersAtPress;
