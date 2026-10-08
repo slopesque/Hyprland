@@ -248,7 +248,7 @@ TEST(Keybinds, CatchAllContextHonorsSubmapAndModifiers) {
     EXPECT_TRUE(result->matchesContext({.submap = &submapContext, .modifiersNow = HL_MODIFIER_META}));
     EXPECT_FALSE(result->matchesContext({.submap = &submapContext}));
 
-    submapContext.remove(resize);
+    submapContext.remove(nullptr);
     submapContext.add(PSubmap(other));
     ASSERT_FALSE(submapContext.contains("resize"));
     ASSERT_TRUE(submapContext.contains("other"));

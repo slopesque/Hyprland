@@ -387,7 +387,7 @@ static int hlGetWorkspaceWindows(lua_State* L) {
 static int hlGetActiveSubmaps(lua_State* L) {
     auto        submaps = Config::Actions::state()->m_currentSubmap.submaps();
 
-    std::string submaps_view = submaps | std::views::transform([](const auto& submap) { return submap->name(); }) | std::views::join_with('\n') | std::ranges::to<std::string>();
+    std::string submaps_view = submaps | std::views::transform([](const auto& definition) { return definition.second->name(); }) | std::views::join_with('\n') | std::ranges::to<std::string>();
 
     lua_pushstring(L, submaps_view.c_str());
     return 1;

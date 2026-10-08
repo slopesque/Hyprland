@@ -51,9 +51,11 @@ static inline bool matchesSubmapContext(const CBind& bind, const Config::Actions
     if (ctx == nullptr || ctx->empty())
         return SUBMAP.empty();
 
-    const auto MATCH = ctx->find(SUBMAP);
+    const auto ACTIVE_SUBMAPS = ctx->find(bind.devices());
 
-    return MATCH.has_value();
+    const auto MATCH = std::ranges::find_if(ACTIVE_SUBMAPS, [SUBMAP](const auto& submap) { return submap->name() == SUBMAP; });
+
+    return MATCH != ACTIVE_SUBMAPS.end();
 }
 
 static eBindMatch matchKeySets(const std::vector<const CKey*>& bound, const std::vector<const SResolvedKey*>& held) {
@@ -214,8 +216,9 @@ bool CBind::matchesContext(const SBindEventContext& ctx) const {
     if (!m_enabled || !matchesDevice(ctx.device))
         return false;
 
-    if (!matchesSubmapContext(*this, ctx.submap))
+    if (!matchesSubmapContext(*this, ctx.submap)) {
         return false;
+    }
 
     auto effectiveMods = ctx.pressed ? ctx.modifiersNow : ctx.modifiersAtPress;
     if (ctx.pressed) {

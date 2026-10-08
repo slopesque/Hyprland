@@ -1895,7 +1895,7 @@ static std::string getDescriptions(eHyprCtlOutputFormat format, std::string requ
 static std::string submapRequest(eHyprCtlOutputFormat format, std::string request) {
     const auto& CONTEXT = Keybinds::mgr()->currentSubmap();
 
-    std::string submap = CONTEXT.submaps() | std::views::transform([](const auto& s) { return s->name(); }) | std::views::join_with('\n') | std::ranges::to<std::string>();
+    std::string submap = CONTEXT.submaps() | std::views::transform([](const auto& s) { return s.second->name(); }) | std::views::join_with('\n') | std::ranges::to<std::string>();
 
     if (submap.empty())
         submap = "default";

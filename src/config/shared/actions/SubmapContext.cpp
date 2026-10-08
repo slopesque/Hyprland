@@ -12,29 +12,33 @@ SP<CSubmapContext> CSubmapContext::snapshot() {
 }
 
 bool CSubmapContext::contains(const std::string& submap) const {
-    return find(submap) != std::nullopt;
+    const auto MATCH = std::ranges::find_if(m_submaps, [submap](const auto& s) { return s.second->name() == submap; });
+
+    return MATCH != m_submaps.end();
 }
 
-bool CSubmapContext::contains(const Keybinds::PSubmap& submap) const {
-    return m_submaps.contains(submap);
-}
-
-std::optional<Keybinds::PSubmap> CSubmapContext::find(const std::string& submap) const {
-    const auto MATCH = std::ranges::find_if(m_submaps, [submap](const auto& s) { return s->name() == submap; });
-
-    if (MATCH == m_submaps.end())
-        return std::nullopt;
-
-    return *MATCH;
-}
-
-std::optional<Keybinds::PSubmap> CSubmapContext::find(const Keybinds::PSubmap& submap) const {
+std::optional<Keybinds::PSubmap> CSubmapContext::find(WP<IHID> submap) const {
     const auto MATCH = m_submaps.find(submap);
 
     if (MATCH == m_submaps.end())
         return std::nullopt;
 
-    return *MATCH;
+    return MATCH->second;
+}
+
+std::vector<Keybinds::WSubmap> CSubmapContext::find(const Keybinds::CDeviceList& devices) const {
+    std::vector<Keybinds::WSubmap> results;
+
+    for (const std::string& device : devices.devices()) {
+        const auto MATCH = std::ranges::find_if(m_submaps, [device](const auto& d) { return d.first->m_deviceName == device; });
+
+        if (MATCH == m_submaps.end())
+            continue;
+
+        results.emplace_back(MATCH->second);
+    }
+
+    return results;
 }
 
 bool CSubmapContext::empty() const {
@@ -42,30 +46,32 @@ bool CSubmapContext::empty() const {
 }
 
 void CSubmapContext::add(Keybinds::PSubmap&& submap) {
-    m_submaps.emplace(std::move(submap));
+    add(nullptr, std::move(submap));
 }
 
-void CSubmapContext::remove(const std::string& submap) {
-    std::erase_if(m_submaps, [submap](const auto& s) { return s->name() == submap; });
+void CSubmapContext::add(WP<IHID> device, Keybinds::PSubmap&& submap) {
+    m_submaps.insert({device, std::move(submap)});
 }
 
-void CSubmapContext::remove(const Keybinds::PSubmap& submap) {
+void CSubmapContext::remove(WP<IHID> submap) {
     m_submaps.erase(submap);
 }
 
 void CSubmapContext::toggle(Keybinds::PSubmap&& submap) {
-    const size_t HAS_REMOVED = m_submaps.erase(submap);
+    auto device = std::ranges::find_if(m_submaps, [submap](const auto& s) { return s.second->name() == submap->name(); });
 
-    if (HAS_REMOVED)
+    if (device == m_submaps.end()) {
+        add(std::move(submap));
         return;
+    }
 
-    add(std::move(submap));
+    remove(device->first);
 }
 
 void CSubmapContext::reset() {
     m_submaps.clear();
 }
 
-const std::unordered_set<Keybinds::PSubmap>& CSubmapContext::submaps() const {
+const std::unordered_map<WP<IHID>, Keybinds::PSubmap>& CSubmapContext::submaps() const {
     return m_submaps;
 }

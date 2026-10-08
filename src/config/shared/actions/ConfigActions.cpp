@@ -1716,7 +1716,8 @@ ActionResult Actions::turnOnSubmap(const std::string& submap) {
     else if (EXISTS)
         return {};
 
-    Config::Actions::state()->m_currentSubmap.add(Keybinds::PSubmap(*REFERENCE));
+    const auto& STATE = Config::Actions::state();
+    STATE->m_currentSubmap.add(STATE->m_lastDevice, Keybinds::PSubmap(*REFERENCE));
     // NOTE: we should define later seperate events for each submap action.
     //       for now, we'll just follow the current submap event API
     IPC::Socket2::sock()->postEvent({.event = "submap", .data = submap});
@@ -1734,7 +1735,8 @@ ActionResult Actions::turnOffSubmap(const std::string& submap) {
 
     // should we raise an error if submap was not active?
 
-    Config::Actions::state()->m_currentSubmap.remove(*REFERENCE);
+    const auto& STATE = Config::Actions::state();
+    STATE->m_currentSubmap.remove(STATE->m_lastDevice);
     IPC::Socket2::sock()->postEvent({.event = "submap", .data = submap});
     Event::bus()->m_events.keybinds.submap.emit(std::string(submap));
     return {};
