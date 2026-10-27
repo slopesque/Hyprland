@@ -72,13 +72,16 @@ static std::expected<Keybinds::CDeviceList, std::string> parseDeviceList(lua_Sta
         lua_pop(L, 1);
 
         lua_getfield(L, idx, "list");
-        lua_pushnil(L);
-        while (lua_next(L, -2)) {
-            if (auto device_name = Check::string(L, -1); device_name)
-                devices.emplace(*device_name);
+
+        if (!lua_isnil(L, -1)) {
+            lua_pushnil(L);
+            while (lua_next(L, -2)) {
+                if (auto device_name = Check::string(L, -1); device_name)
+                    devices.emplace(*device_name);
+                lua_pop(L, 1);
+            }
             lua_pop(L, 1);
         }
-        lua_pop(L, 1);
     }
 
     return Keybinds::CDeviceList(inclusive, std::move(devices));
